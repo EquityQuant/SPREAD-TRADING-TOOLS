@@ -1,0 +1,64 @@
+import yfinance as yf
+import numpy as np
+import matplotlib.pyplot as plt
+from datetime import datetime
+
+# Function to calculate historical volatility
+def historical_volatility(data, window=30):
+    log_returns = np.log(data / data.shift(1))
+    return log_returns.rolling(window=window).std() * np.sqrt(252)
+
+# Function to plot spread and its volatility with user inputs and trading signal
+def plot_spread_and_signal():
+    # User inputs for any two tickers
+    ticker1 = input('Enter the first ticker: ')
+    ticker2 = input('Enter the second ticker: ')
+    start_date = input('Enter the start date for the analysis (YYYY-MM-DD): ')
+    end_date = input('Enter the end date for the analysis (YYYY-MM-DD): ')
+
+    # Fetch data from Yahoo Finance
+    data1 = yf.download(ticker1, start=start_date, end=end_date)['Close']
+    data2 = yf.download(ticker2, start=start_date, end=end_date)['Close']
+
+    # Calculate the spread (First ticker's price minus second ticker's price)
+    spread = data1 - data2
+
+    # Calculate historical volatility of the spread
+    spread_volatility = historical_volatility(spread)
+
+    # Calculate mean and standard deviation of the spread
+    mean_spread = spread.mean()
+    std_spread = spread.std()
+
+    # Generate trading signal
+    latest_spread = spread[-1]
+    if latest_spread > mean_spread + std_spread:
+        signal = "Sell Signal: Spread is above one standard deviation from the mean."
+    elif latest_spread < mean_spread - std_spread:
+        signal = "Buy Signal: Spread is below one standard deviation from the mean."
+    else:
+        signal = "Hold: Spread is within one standard deviation from the mean."
+    
+    print(signal)
+
+    # Plot the spread and its volatility
+    fig, ax1 = plt.subplots(figsize=(14, 7))
+
+    ax1.plot(spread.index, spread, label=f'Spread between {ticker1} and {ticker2}', color='blue')
+    ax1.axhline(mean_spread, color='green', linestyle='--', label='Mean Spread')
+    ax1.axhline(mean_spread + std_spread, color='red', linestyle='--', label='Mean + 1 Std Dev')
+    ax1.axhline(mean_spread - std_spread, color='red', linestyle='--', label='Mean - 1 Std Dev')
+    ax1.set_xlabel('Date')
+    ax1.set_ylabel('Spread')
+    ax1.set_title(f'Spread and Volatility between {ticker1} and {ticker2}')
+    ax1.legend(loc='upper left')
+
+    ax2 = ax1.twinx()
+    ax2.plot(spread_volatility.index, spread_volatility, label='Spread Volatility', color='orange')
+    ax2.set_ylabel('Volatility')
+    ax2.legend(loc='upper right')
+
+    plt.show()
+
+# Run the function to prompt user input
+plot_spread_and_signal()
