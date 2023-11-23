@@ -1,0 +1,47 @@
+import yfinance as yf
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Function to calculate historical volatility
+def historical_volatility(data, window=30):
+    log_returns = np.log(data / data.shift(1))
+    return log_returns.rolling(window=window).std() * np.sqrt(252)
+
+# Function to plot the NOB spread and its volatility with user inputs
+def plot_nob_spread():
+    # Interactive prompts for user input
+    note_ticker = 'ZN=F'  # Ticker for 10-year Treasury Note futures
+    bond_ticker = 'ZB=F'  # Ticker for 30-year Treasury Bond futures
+    start_date = input('Enter the start date for the analysis (YYYY-MM-DD): ')
+    end_date = input('Enter the end date for the analysis (YYYY-MM-DD): ')
+
+    # Fetch data from Yahoo Finance
+    note_data = yf.download(note_ticker, start=start_date, end=end_date)['Close']
+    bond_data = yf.download(bond_ticker, start=start_date, end=end_date)['Close']
+
+    # Calculate the NOB spread (Note price minus Bond price)
+    nob_spread = note_data - bond_data
+
+    # Calculate historical volatility of the spread
+    nob_spread_volatility = historical_volatility(nob_spread)
+
+    # Plot the NOB spread and its volatility
+    fig, ax1 = plt.subplots(figsize=(14, 7))
+
+    ax1.plot(nob_spread.index, nob_spread, label='NOB Spread', color='blue')
+    ax1.set_xlabel('Date')
+    ax1.set_ylabel('NOB Spread', color='blue')
+    ax1.tick_params(axis='y', labelcolor='blue')
+    ax1.set_title('NOB Spread and Volatility')
+    ax1.legend(loc='upper left')
+
+    ax2 = ax1.twinx()
+    ax2.plot(nob_spread_volatility.index, nob_spread_volatility, label='NOB Spread Volatility', color='orange')
+    ax2.set_ylabel('Volatility', color='orange')
+    ax2.tick_params(axis='y', labelcolor='orange')
+    ax2.legend(loc='upper right')
+
+    plt.show()
+
+# Run the function to prompt user input
+plot_nob_spread()
